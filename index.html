@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intel Briefing</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232733;
+    --border: #2e3340;
+    --text: #e0e0e6;
+    --text-dim: #8b8fa3;
+    --accent: #6c8aff;
+    --accent-dim: #4a5fa0;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --orange: #fb923c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+  header h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: 0.5px; }
+  header h1 span { color: var(--accent); }
+  .last-updated { font-size: 0.75rem; color: var(--text-dim); }
+  nav {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem; overflow-x: auto;
+  }
+  nav button {
+    background: none; border: none; color: var(--text-dim);
+    padding: 0.75rem 1.25rem; font-size: 0.85rem; cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }  main { max-width: 900px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .article {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem;
+  }
+  .article-date {
+    font-size: 0.75rem; color: var(--accent); font-weight: 600;
+    letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 0.5rem;
+  }
+  .article h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; line-height: 1.4; }
+  .article h3 { font-size: 0.95rem; font-weight: 600; color: var(--accent); margin: 1rem 0 0.5rem; }
+  .article p { margin-bottom: 0.5rem; font-size: 0.9rem; }
+  .article ul { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+  .article li { font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .article a { color: var(--accent); text-decoration: none; }
+  .article a:hover { text-decoration: underline; }
+  .article strong { color: #fff; }
+  .article em { color: var(--text-dim); font-style: italic; }
+  .article hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }  .article table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin: 0.75rem 0; }
+  .article th {
+    text-align: left; padding: 0.5rem; border-bottom: 2px solid var(--border);
+    color: var(--text-dim); font-weight: 600; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .article td { padding: 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .article blockquote { border-left: 3px solid var(--accent-dim); padding-left: 1rem; margin: 0.75rem 0; color: var(--text-dim); }
+  .status-confirmed { color: var(--green); font-weight: 700; }
+  .status-busted { color: var(--red); font-weight: 700; }
+  .status-strengthening { color: var(--yellow); font-weight: 700; }
+  .status-weakening { color: var(--orange); font-weight: 700; }
+  .status-pending { color: var(--text-dim); }
+  .empty { text-align: center; padding: 3rem; color: var(--text-dim); }
+  @media (max-width: 640px) {
+    header, nav, main { padding-left: 1rem; padding-right: 1rem; }
+    nav button { padding: 0.6rem 0.75rem; font-size: 0.8rem; }
+    .article { padding: 1rem; }
+  }
+</style>
+</head>
+<body><header>
+  <h1><span>INTEL</span> BRIEFING</h1>
+  <span class="last-updated" id="lastUpdated"></span>
+</header>
+<nav id="tabs">
+  <button class="active" data-tab="briefings">Daily Briefings</button>
+  <button data-tab="monitors">Source Monitor</button>
+  <button data-tab="tracker">Trend Tracker</button>
+  <button data-tab="digests">Weekly Digest</button>
+</nav>
+<main>
+  <div id="briefings" class="tab-content active"></div>
+  <div id="monitors" class="tab-content"></div>
+  <div id="tracker" class="tab-content"></div>
+  <div id="digests" class="tab-content"></div>
+</main>
+<script>function md(text) {
+  if (!text) return '';
+  let html = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/~~(.+?)~~/g, '<del>$1</del>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');  html = html.replace(/((?:^\|.+\|$\n?)+)/gm, function(table) {
+    const rows = table.trim().split('\n').filter(r => r.trim());
+    if (rows.length < 2) return table;
+    const parseRow = r => r.split('|').slice(1, -1).map(c => c.trim());
+    const headers = parseRow(rows[0]);
+    const startIdx = /^\|[\s\-:|]+\|$/.test(rows[1]) ? 2 : 1;
+    let t = '<table><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+    for (let i = startIdx; i < rows.length; i++) {
+      const cells = parseRow(rows[i]);
+      t += '<tr>' + cells.map(c => {
+        let cls = '';
+        if (/\*\*CONFIRMED\*\*/.test(c)) cls = 'status-confirmed';
+        else if (/\*\*BUSTED\*\*/.test(c)) cls = 'status-busted';
+        else if (/Strengthening/.test(c)) cls = 'status-strengthening';
+        else if (/Weakening/.test(c)) cls = 'status-weakening';
+        else if (/Pending/.test(c)) cls = 'status-pending';
+        let cc = c
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.+?)\*/g, '<em>$1</em>')
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        return `<td class="${cls}">${cc}</td>`;
+      }).join('') + '</tr>';
+    }
+    t += '</tbody></table>';
+    return t;
+  });  html = html.replace(/((?:^- .+$\n?)+)/gm, function(block) {
+    const items = block.trim().split('\n').map(l => l.replace(/^- /, ''));
+    return '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>';
+  });
+  html = html.split('\n').map(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return '';
+    if (/^<(h[1-4]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|hr|div|p)/.test(trimmed)) return line;
+    return `<p>${trimmed}</p>`;
+  }).join('\n');
+  return html;
+}
+
+document.getElementById('tabs').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(e.target.dataset.tab).classList.add('active');
+});async function loadContent() {
+  try {
+    const res = await fetch('content.json?t=' + Date.now());
+    const data = await res.json();
+    document.getElementById('lastUpdated').textContent = 'Updated ' + data.generated;
+    const bEl = document.getElementById('briefings');
+    bEl.innerHTML = data.briefings.length === 0 ? '<div class="empty">No briefings yet.</div>' :
+      data.briefings.map(b => `<div class="article"><div class="article-date">${b.date}</div>${md(b.content)}</div>`).join('');
+    const mEl = document.getElementById('monitors');
+    mEl.innerHTML = data.monitors.length === 0 ? '<div class="empty">No source monitor logs yet.</div>' :
+      data.monitors.map(m => `<div class="article"><div class="article-date">${m.date}</div>${md(m.content)}</div>`).join('');
+    const tEl = document.getElementById('tracker');
+    tEl.innerHTML = !data.tracker ? '<div class="empty">No trend tracker data.</div>' :
+      `<div class="article">${md(data.tracker)}</div>`;
+    const dEl = document.getElementById('digests');
+    dEl.innerHTML = data.digests.length === 0 ? '<div class="empty">No weekly digests yet.</div>' :
+      data.digests.map(d => `<div class="article"><div class="article-date">${d.date}</div>${md(d.content)}</div>`).join('');
+  } catch (err) {
+    document.getElementById('briefings').innerHTML = '<div class="empty">Could not load content. Make sure content.json exists.</div>';
+  }
+}
+loadContent();
+</script>
+</body>
+</html>
